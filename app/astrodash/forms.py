@@ -263,13 +263,7 @@ class BatchForm(forms.Form):
         help_text="Select multiple spectrum files to upload."
     )
 
-    # Analysis Options (Similar to ClassifyForm)
-    model = forms.ChoiceField(
-        choices=ClassifyForm.MODEL_CHOICES, 
-        initial='dash',
-        widget=forms.Select(attrs={'class': 'form-control'})
-    )
-    
+    # Analysis Options (model is taken from session on model selection page)
     smoothing = forms.IntegerField(
         initial=0,
         min_value=0,
@@ -324,12 +318,8 @@ class BatchForm(forms.Form):
 
         known_z = cleaned_data.get('known_z')
         redshift = cleaned_data.get('redshift')
-        model = cleaned_data.get('model')
 
         if known_z and redshift is None:
             self.add_error('redshift', "Redshift is required when 'Known Redshift' is checked.")
-        
-        if model == 'transformer' and redshift is None:
-             self.add_error('redshift', "Redshift is required for Transformer model.")
 
         return cleaned_data

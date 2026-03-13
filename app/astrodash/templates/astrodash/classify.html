@@ -27,9 +27,11 @@
         <li class="nav-item" role="presentation">
             <a class="nav-link active" id="classification-tab" data-toggle="tab" href="#classification-pane" role="tab" aria-controls="classification-pane" aria-selected="true">Classification</a>
         </li>
+        {% if selected_model_type == 'dash' %}
         <li class="nav-item" role="presentation">
             <a class="nav-link" id="twins-tab" data-toggle="tab" href="#twins-pane" role="tab" aria-controls="twins-pane" aria-selected="false">DASH Twins</a>
         </li>
+        {% endif %}
     </ul>
 
     <div class="tab-content" id="classifyTabContent">
@@ -104,6 +106,9 @@
                     <h4 class="mb-0">Spectrum Analysis</h4>
                     <div class="mt-2 mt-md-0">
                         <button type="button" class="btn btn-outline-primary btn-sm mr-2" id="customize-plot-btn" aria-label="Customize plot overlays">CUSTOMIZE PLOT</button>
+                        {% if selected_model_type == 'dash' and has_dash_embedding %}
+                        <a href="#" class="btn btn-primary btn-sm mr-2" id="find-twins-btn" aria-label="Find twins in DASH embedding space">FIND TWINS</a>
+                        {% endif %}
                         <button type="button" class="btn btn-outline-secondary btn-sm" id="save-plot-btn" aria-label="Save plot">SAVE</button>
                     </div>
                 </div>
@@ -236,10 +241,12 @@
         </div>
     </div>
         </div>
+        {% if selected_model_type == 'dash' %}
         <!-- DASH Twins tab: embedded explorer -->
         <div class="tab-pane fade" id="twins-pane" role="tabpanel" aria-labelledby="twins-tab">
-            <iframe src="{% url 'astrodash:dash_twins' %}" title="DASH Twins Explorer" style="width: 100%; height: calc(100vh - 180px); min-height: 600px; border: 1px solid #dee2e6; border-radius: 4px;"></iframe>
+            <iframe id="dash-twins-iframe" src="{% url 'astrodash:dash_twins' %}" title="DASH Twins Explorer" style="width: 100%; height: calc(100vh - 180px); min-height: 600px; border: 1px solid #dee2e6; border-radius: 4px;"></iframe>
         </div>
+        {% endif %}
     </div>
 </div>
 
@@ -255,6 +262,7 @@
         apiBase: "{{ plot_api_base|escapejs }}",
         classifyUrl: "{{ request.path|escapejs }}"
     };
+    var twinsBaseUrl = "{% url 'astrodash:dash_twins' %}";
     var initialElements = [];
     var initialTemplates = [];
     var elEl = document.getElementById("initial-overlay-elements");
@@ -433,6 +441,16 @@
 
         var applyBtn = document.getElementById("apply-overlays-btn");
         if (applyBtn) applyBtn.addEventListener("click", function() { applyOverlays(); });
+
+        var findTwinsBtn = document.getElementById("find-twins-btn");
+        var twinsIframe = document.getElementById("dash-twins-iframe");
+        if (findTwinsBtn && twinsIframe) {
+            findTwinsBtn.addEventListener("click", function(e) {
+                e.preventDefault();
+                twinsIframe.src = twinsBaseUrl + "?user_query=1";
+                $("#twins-tab").tab("show");
+            });
+        }
     });
 })();
 </script>
