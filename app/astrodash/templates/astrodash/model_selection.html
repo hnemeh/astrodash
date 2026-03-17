@@ -179,7 +179,7 @@
                 </div>
 
                 <!-- Upload Model Section (Form Fields). Shown when show_upload_section is set (e.g. validation errors or after error). -->
-                <div class="card shadow-sm mb-4" id="uploadSection" style="display: {% if show_upload_section|default:False %}block{% else %}none{% endif %};">
+                <div class="card shadow-sm mb-4 {% if show_upload_section|default:False %}d-block{% else %}d-none{% endif %}" id="uploadSection" data-show-upload-section="{{ show_upload_section|default:False|yesno:'true,false' }}">
                     <div class="card-body">
 
                         <div class="form-group">
@@ -353,7 +353,8 @@
 
     // On load: if server asked to show upload section (e.g. validation errors), select upload card so errors are visible
     document.addEventListener('DOMContentLoaded', function() {
-        if ({{ show_upload_section|default:False|yesno:"true,false" }}) {
+        var uploadEl = document.getElementById('uploadSection');
+        if (uploadEl && uploadEl.getAttribute('data-show-upload-section') === 'true') {
             selectModel('upload');
         }
     });

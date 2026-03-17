@@ -29,6 +29,37 @@ import json
 
 logger = get_logger(__name__)
 
+# Directory containing logo, favicon, etc. (app/astrodash/static/images/)
+APP_STATIC_IMAGES_DIR = Path(__file__).resolve().parent / "static" / "images"
+
+# Safe MIME types for known extensions in that directory
+APP_STATIC_MIME = {
+    ".svg": "image/svg+xml",
+    ".png": "image/png",
+    ".ico": "image/x-icon",
+}
+
+
+def serve_app_static_image(request, path):
+    """
+    Serve static image files from app/astrodash/static/images/.
+    Used for logo and favicon so they work without collectstatic/nginx volume.
+    """
+    if ".." in path or "/" in path or "\\" in path:
+        raise Http404("Invalid path")
+    file_path = (APP_STATIC_IMAGES_DIR / path).resolve()
+    try:
+        if not file_path.is_file():
+            raise Http404("Not found")
+        # Ensure we don't escape the app static images dir
+        if not str(file_path).startswith(str(APP_STATIC_IMAGES_DIR.resolve())):
+            raise Http404("Invalid path")
+    except (OSError, ValueError):
+        raise Http404("Not found")
+    content_type = APP_STATIC_MIME.get(file_path.suffix.lower(), "application/octet-stream")
+    return FileResponse(file_path.open("rb"), content_type=content_type)
+
+
 def landing_page(request):
     """
     Renders the Astrodash landing page.

@@ -91,7 +91,7 @@
 </style>
   {% load bootstrap4 %}
 
-  <link rel="shortcut icon" type="image/png" href="{% static 'images/favicon.ico' %}" >
+  <link rel="icon" type="image/svg+xml" href="{% url 'astrodash:app_static_images' 'favicon.svg' %}">
 </head>
 
 <body>
@@ -103,7 +103,10 @@
       <div class="container-fluid d-flex">
         <ul class="navbar-nav mr-auto d-flex align-items-center">
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'astrodash:landing_page' %}"><i class="bi bi-house"></i> Astrodash</a>
+            <a class="nav-link d-flex align-items-center" href="{% url 'astrodash:landing_page' %}"><img src="{% url 'astrodash:app_static_images' 'logo-scimma-lockup-dark.svg' %}" alt="Astrodash" height="28" class="navbar-logo"></a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'astrodash:landing_page' %}">Home</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="{% url 'astrodash:classify' %}"><i class="bi bi-search"></i> Classify</a>

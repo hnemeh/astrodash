@@ -5,6 +5,8 @@ from astrodash import ui_views
 app_name = "astrodash"
 
 urlpatterns = [
+    # App static images (logo, favicon) served from app/astrodash/static/images/
+    path("static/images/<path:path>", ui_views.serve_app_static_image, name="app_static_images"),
     # UI Views
     path("", ui_views.landing_page, name="landing_page"),
     path("select-model/", ui_views.model_selection, name="model_selection"),
