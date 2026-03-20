@@ -1,27 +1,27 @@
 [
   {
     "path": "explorer/dash_twins_embeddings.npy",
-    "version_id": "alzVOKhe8vKa3B-tGx9CMZmA59zwN9J",
-    "etag": "21a135a84bcdb98aa1ffb655d5cbdaca",
+    "version_id": "GBza7deknWWkt5MY9VNObDyW98HawiP",
+    "etag": "2b14dc6ba90959f7dbddf89188ecbc58",
     "size": 15630464
   },
   {
     "path": "explorer/dash_twins_payload.json",
-    "version_id": "mbfiGVcmB9thWuUMjDyqJd1e83l3g.V",
-    "etag": "156bc1fee0dd78b6152554880b02bd1b-5",
-    "size": 76742649
+    "version_id": "c1lRwUCpTpBqpqSf1vvny53FgIy7P.D",
+    "etag": "0dfa7c57073b5b053af325c9b77cd71b-9",
+    "size": 137529035
   },
   {
     "path": "explorer/dash_twins_pca.pkl",
-    "version_id": "eseskceHs95C.Q.bGtRO6Q46NsIvp4j",
-    "etag": "b887e8cf4a995b8ddbe93d7c288015e6",
-    "size": 13080
+    "version_id": "1Rhbg07da9YfYfOq3Q5FrxkUWN9BBDv",
+    "etag": "ba70a7d08127a213a0456cdc274c6be4",
+    "size": 13037
   },
   {
     "path": "explorer/dash_twins_umap.pkl",
-    "version_id": "Sxto7syCmPZc2I62ZzGuuvu9zHoR07w",
-    "etag": "153df66798a7c3e9cb729fd765cf1ae5",
-    "size": 16342825
+    "version_id": "9Oua8wxVnsx14gWrbbrNzeH0d.e7x-v",
+    "etag": "609d4de3f44701369b7bec244c333a9c",
+    "size": 16301557
   },
   {
     "path": "pre_trained_models/dash/agnosticZ/model_info.txt",
