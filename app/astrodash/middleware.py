@@ -52,6 +52,17 @@ class StaticAndTwinsBundleMiddleware(WhiteNoiseMiddleware):
         self.add_files(
             get_settings().daep_twins_bundle_dir, prefix=TWINS_BUNDLE_URL_PREFIX
         )
+        # Local three-dataset DAEP viewer; each bundle has its own isolated
+        # directory and URL prefix, with no writable or user-supplied path.
+        from pathlib import Path
+        local_root = Path(get_settings().data_dir) / "explorer" / "local_twins"
+        for dataset_id in ("rest_frame", "observer_frame", "multi_object_rest"):
+            public_dir = local_root / dataset_id
+            if public_dir.is_dir():
+                self.add_files(
+                    str(public_dir),
+                    prefix=TWINS_BUNDLE_URL_PREFIX + dataset_id + "/",
+                )
 
 
 # The REST views whose failures are contracted to be JSON. The UI views in

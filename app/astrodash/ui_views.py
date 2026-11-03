@@ -180,32 +180,63 @@ def leaderboard(request):
 
 
 def spectral_twins(request):
-    """Render the public DAEP Spectral Twins explorer.
+    """Serve the chosen local DAEP WISeREP bundle without mixing datasets.
 
-    The page browses Henna Abunemeh's DAEP latent space of WISeREP spectra:
-    the map, twins, and spectra all come from her precomputed bundle, which
-    the browser fetches from ``TWINS_BUNDLE_URL_PREFIX``. The bundle's
-    descriptor is checked here so a missing or unrecognized bundle renders a
-    clear state instead of a broken explorer.
-
-    Args:
-        request: The incoming request.
-
-    Returns:
-        The rendered explorer page, or its not-installed or unsupported state.
+    The three named bundles live separately under the Docker data volume:
+    explorer/local_twins/{rest_frame,observer_frame,multi_object_rest}/.
+    Each contains bundle.json, data_meta.json, and data_spectra.bin.
     """
-    bundle_dir = Path(get_config().daep_twins_bundle_dir)
-    descriptor_path = bundle_dir / daep_bundle.DESCRIPTOR_FILENAME
-    context = {"bundle_state": "ok", "twins_config": None}
-    try:
-        descriptor = daep_bundle.read_descriptor(descriptor_path)
-    except FileNotFoundError:
-        context["bundle_state"] = "missing"
-    except (daep_bundle.BundleError, ValueError) as exc:
-        logger.error("DAEP twins bundle descriptor rejected: %s", exc)
-        context["bundle_state"] = "unsupported"
-    else:
-        prefix = TWINS_BUNDLE_URL_PREFIX
+    models = (
+        ("rest_frame", "Rest-Frame DAEP"),
+        ("observer_frame", "Observer-Frame DAEP"),
+        ("multi_object_rest", "Multi-Object DAEP"),
+    )
+    selected = request.GET.get("dataset", "rest_frame")
+    if selected not in dict(models):
+        selected = "rest_frame"
+    root = Path(get_config().data_dir) / "explorer" / "local_twins"
+    configurations = {}
+    options = []
+    for key, label in models:
+        public_dir = root / key
+        try:
+            desc = daep_bundle.read_descriptor(public_dir / daep_bundle.DESCRIPTOR_FILENAME)
+            # The descriptor alone is not enough: avoid offering incomplete bundles.
+            if not (public_dir / daep_bundle.META_FILENAME).is_file():
+                raise FileNotFoundError("metadata missing")
+            if not (public_dir / daep_bundle.SPECTRA_FILENAME).is_file():
+                raise FileNotFoundError("spectra missing")
+        except (OSError, daep_bundle.BundleError, ValueError) as exc:
+            logger.debug("Local DAEP bundle %s not available: %s", key, exc)
+        else:
+            configurations[key] = desc
+        options.append({"id": key, "label": label, "available": key in configurations})
+
+    # Keep an already-installed original bundle usable until local copies
+    # are staged; a local rest_frame bundle always takes precedence.
+    legacy_dir = Path(get_config().daep_twins_bundle_dir)
+    use_legacy = selected == "rest_frame" and selected not in configurations
+    if use_legacy:
+        try:
+            legacy_descriptor = daep_bundle.read_descriptor(
+                legacy_dir / daep_bundle.DESCRIPTOR_FILENAME
+            )
+        except (OSError, daep_bundle.BundleError, ValueError):
+            use_legacy = False
+        else:
+            configurations[selected] = legacy_descriptor
+            options[0]["available"] = True
+
+    context = {
+        "bundle_state": "missing",
+        "twins_config": None,
+        "twins_datasets": options,
+        "twins_selected_dataset": selected,
+    }
+    descriptor = configurations.get(selected)
+    if descriptor is not None:
+        prefix = TWINS_BUNDLE_URL_PREFIX + ("" if use_legacy else selected + "/")
+        context["bundle_state"] = "ok"
         context["twins_config"] = {
             "metaUrl": prefix + daep_bundle.META_FILENAME,
             "spectraUrl": prefix + daep_bundle.SPECTRA_FILENAME,
