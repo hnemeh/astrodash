@@ -194,12 +194,15 @@ def spectral_twins(request):
     selected = request.GET.get("dataset", "rest_frame")
     if selected not in dict(models):
         selected = "rest_frame"
-    root = Path(get_config().data_dir) / "explorer" / "local_twins"
+    configured_data_dir = getattr(get_config(), "data_dir", None)
+    root = Path(configured_data_dir) / "explorer" / "local_twins" if configured_data_dir else None
     configurations = {}
     options = []
     for key, label in models:
-        public_dir = root / key
+        public_dir = root / key if root is not None else None
         try:
+            if public_dir is None:
+                raise FileNotFoundError("Multi-model data directory not configured")
             desc = daep_bundle.read_descriptor(public_dir / daep_bundle.DESCRIPTOR_FILENAME)
             # The descriptor alone is not enough: avoid offering incomplete bundles.
             if not (public_dir / daep_bundle.META_FILENAME).is_file():
@@ -216,19 +219,21 @@ def spectral_twins(request):
     # are staged; a local rest_frame bundle always takes precedence.
     legacy_dir = Path(get_config().daep_twins_bundle_dir)
     use_legacy = selected == "rest_frame" and selected not in configurations
+    legacy_invalid = False
     if use_legacy:
+        descriptor_path = legacy_dir / daep_bundle.DESCRIPTOR_FILENAME
         try:
-            legacy_descriptor = daep_bundle.read_descriptor(
-                legacy_dir / daep_bundle.DESCRIPTOR_FILENAME
-            )
+            legacy_descriptor = daep_bundle.read_descriptor(descriptor_path)
         except (OSError, daep_bundle.BundleError, ValueError):
+            # Distinguish a missing bundle from an invalid descriptor.
+            legacy_invalid = descriptor_path.is_file()
             use_legacy = False
         else:
             configurations[selected] = legacy_descriptor
             options[0]["available"] = True
 
     context = {
-        "bundle_state": "missing",
+        "bundle_state": "invalid" if legacy_invalid else "missing",
         "twins_config": None,
         "twins_datasets": options,
         "twins_selected_dataset": selected,

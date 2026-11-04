@@ -65,6 +65,8 @@ the client needs to cross-check it.
   #twins-app .pair-date-row { cursor:pointer; }
   #twins-app .pair-date-row.selected-epoch-row { background:#dce9ff; }
   #twins-app .pair-date-row:nth-of-type(even) { border-bottom:2px solid #e6eaf0; }
+  #twins-app #recurrencePairEpoch { flex: 1 1 320px; min-width: 220px; }
+  #twins-app #recurrencePairPrev:disabled, #twins-app #recurrencePairNext:disabled { opacity: 0.45; }
 </style>
 
 <div id="twins-app">
@@ -159,19 +161,22 @@ the client needs to cross-check it.
     Update page to recurrent twins
 </button>
 
-      <button id="downloadRecurrence" class="btn btn-sm btn-outline-secondary" type="button">Export recurrence CSV</button>
+      <button id="downloadRecurrence" class="btn btn-sm btn-outline-secondary" type="button">Export recurrence CSV (summary + spectra)</button>
     </div>
     <div id="recurrenceSummary" class="small-note mt-2"></div>
     <div id="recurrenceTable" class="mt-2"></div>
     <div class="twins-card mt-3">
       <div class="twins-row justify-content-between">
         <strong id="recurrencePairTitle">Select a recurrent twin to compare spectra</strong>
-        <label for="recurrencePairEpoch">Matching target date:</label>
-        <select id="recurrencePairEpoch" style="min-width:220px;max-width:100%;"></select>
+        <label for="recurrencePairEpoch">Matching target observation:</label>
+        <button id="recurrencePairPrev" class="btn btn-sm btn-outline-secondary" type="button" aria-label="Previous matched observation">← Previous</button>
+        <select id="recurrencePairEpoch" style="min-width:260px;max-width:100%;" aria-label="Matching target observation"></select>
+        <button id="recurrencePairNext" class="btn btn-sm btn-outline-secondary" type="button" aria-label="Next matched observation">Next →</button>
+        <span id="recurrencePairCounter" class="small-note" aria-live="polite"></span>
       </div>
       <div id="recurrencePairDetails" class="small-note mt-2"></div>
       <div id="recurrencePairPlot" style="width:100%;height:500px;"></div>
-      <div class="small-note">Only the target spectrum and best-matched recurrent twin spectrum are plotted. Choose another observing date to compare the pair across epochs.</div>
+      <div class="small-note">Only the target spectrum and best-matched recurrent twin spectrum are plotted. Use the observation selector or Previous/Next buttons to compare every matched spectrum, including multiple spectra obtained on the same date.</div>
     </div>
   </section>
   <div id="status" class="status" role="status"></div>
@@ -490,36 +495,94 @@ function renderRecurrence(targetIdx) {
 function clearRecurrencePair(msg) {
   document.getElementById('recurrencePairTitle').textContent = msg;
   document.getElementById('recurrencePairEpoch').innerHTML = '';
+  document.getElementById('recurrencePairCounter').textContent = '';
+  document.getElementById('recurrencePairPrev').disabled = true;
+  document.getElementById('recurrencePairNext').disabled = true;
   document.getElementById('recurrencePairDetails').textContent = '';
   Plotly.react('recurrencePairPlot',[],{annotations:[{text:msg,xref:'paper',yref:'paper',x:.5,y:.5,showarrow:false}],xaxis:{visible:false},yaxis:{visible:false}}, {responsive:true});
 }
 
+// RECURRENCE_OBSERVATION_NAV_V1
+// All spectrum-level matches, including multiple target spectra on the same day.
+// The object's recurrence fraction is STILL calculated from distinct epochKeys.
+function sortedRecurrenceMatches(object) {
+  return [...object.matches].sort((a,b) => {
+    const jdA = DATA.jd[a.targetIdx], jdB = DATA.jd[b.targetIdx];
+    const aNum = jdA === null || jdA === undefined ? Infinity : Number(jdA);
+    const bNum = jdB === null || jdB === undefined ? Infinity : Number(jdB);
+    return aNum - bNum || a.targetIdx - b.targetIdx || a.twinIdx - b.twinIdx;
+  });
+}
+function recurrenceMatchId(m) { return String(m.targetIdx) + ':' + String(m.twinIdx); }
+function recurrenceObsLabel(m) {
+  const targetInst = instAt(m.targetIdx) || 'Unknown instrument';
+  const twinInst = instAt(m.twinIdx) || 'Unknown instrument';
+
+  const targetId = DATA.spec_id?.[m.targetIdx];
+  const twinId = DATA.spec_id?.[m.twinIdx];
+
+  const targetLabel = targetInst +
+    (targetId != null && String(targetId).trim() ? ' #' + targetId : '');
+
+  const twinLabel = twinInst +
+    (twinId != null && String(twinId).trim() ? ' #' + twinId : '');
+
+  return `${recDate(m.targetIdx)} · ${targetLabel}` +
+    ` → ${recDate(m.twinIdx)} · ${twinLabel}` +
+    ` · cosine ${fmtNum(m.similarity,4)}`;
+}
+function updateRecurrenceNavigation() {
+  const sel = $('recurrencePairEpoch');
+  const index = sel.selectedIndex;
+  const count = sel.options.length;
+  $('recurrencePairPrev').disabled = index <= 0;
+  $('recurrencePairNext').disabled = index < 0 || index >= count-1;
+  $('recurrencePairCounter').textContent = count ? `Observation ${index+1} of ${count}` : 'No matched observations';
+}
+function selectRecurrenceMatch(id) {
+  const sel = $('recurrencePairEpoch');
+  if (!Array.from(sel.options).some(o => o.value === id)) return;
+  REC_PAIR_EPOCH = id; // Historical variable name; now identifies a unique spectrum pair.
+  sel.value = id;
+  updateRecurrenceNavigation();
+  $('tbl').querySelectorAll('.pair-date-row').forEach(row =>
+    row.classList.toggle('selected-epoch-row', row.dataset.epoch === id));
+  plotRecurrencePair();
+}
+function stepRecurrenceMatch(delta) {
+  const sel = $('recurrencePairEpoch');
+  const next = sel.selectedIndex + delta;
+  if (next < 0 || next >= sel.options.length) return;
+  selectRecurrenceMatch(sel.options[next].value);
+}
+
 function populateRecurrenceEpochs() {
   if (!CURRENT_RECURRENCE) return;
-  const r = CURRENT_RECURRENCE.shown.find(x=>snKey(x.name)===REC_PAIR_SN);
-  if (!r) {clearRecurrencePair('Select a recurrent twin'); return;}
-  const epochs=[...r.bestMatches].sort((a,b)=>{
-    const aJD=DATA.jd[a.targetIdx], bJD=DATA.jd[b.targetIdx];
-    return (Number.isFinite(Number(aJD))?Number(aJD):Infinity)-(Number.isFinite(Number(bJD))?Number(bJD):Infinity) || a.targetIdx-b.targetIdx;
-  });
-  const sel=document.getElementById('recurrencePairEpoch');
-  if (!epochs.some(m=>m.epoch===REC_PAIR_EPOCH)) REC_PAIR_EPOCH=epochs[0].epoch;
-  sel.innerHTML='';
-  epochs.forEach(m=>{
-    const opt=document.createElement('option');
-    opt.value=m.epoch;
-    opt.textContent=`${recDate(m.targetIdx)} | cosine ${fmtNum(m.similarity,4)}`;
+  const r = CURRENT_RECURRENCE.shown.find(x => snKey(x.name) === REC_PAIR_SN);
+  if (!r) { clearRecurrencePair('Select a recurrent twin'); updateRecurrenceNavigation(); return; }
+  const matches = sortedRecurrenceMatches(r);
+  const sel = $('recurrencePairEpoch');
+  if (!matches.some(m => recurrenceMatchId(m) === REC_PAIR_EPOCH)) {
+    REC_PAIR_EPOCH = matches.length ? recurrenceMatchId(matches[0]) : null;
+  }
+  sel.innerHTML = '';
+  matches.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = recurrenceMatchId(m);
+    opt.textContent = recurrenceObsLabel(m);
     sel.appendChild(opt);
   });
-  sel.value=REC_PAIR_EPOCH;
-  plotRecurrencePair();
+  if (REC_PAIR_EPOCH !== null) sel.value = REC_PAIR_EPOCH;
+  updateRecurrenceNavigation();
+  if (matches.length) plotRecurrencePair();
+  else clearRecurrencePair('No matched observations');
 }
 
 async function plotRecurrencePair() {
   if (!CURRENT_RECURRENCE) return;
   const r=CURRENT_RECURRENCE.shown.find(x=>snKey(x.name)===REC_PAIR_SN);
   if (!r) return;
-  const match=r.bestMatches.find(m=>m.epoch===REC_PAIR_EPOCH);
+  const match=r.matches.find(m=>recurrenceMatchId(m)===REC_PAIR_EPOCH);
   if (!match) return;
   const myToken=++REC_PAIR_TOKEN;
   const targetSN=CURRENT_RECURRENCE.targetSN;
@@ -530,8 +593,8 @@ async function plotRecurrencePair() {
     if(myToken!==REC_PAIR_TOKEN) return;
     const stats=computeSpectralRMSE(a,b);
     const traces=[
-      spectraTrace(a,`${targetSN} | ${recDate(match.targetIdx)} | target idx ${match.targetIdx}`,null),
-      spectraTrace(b,`${r.name} | ${recDate(match.twinIdx)} | twin idx ${match.twinIdx}`,'dash')
+      spectraTrace(a,`${targetSN} | ${recDate(match.targetIdx)} | ${instAt(match.targetIdx)||'instrument NA'} | target`,null),
+      spectraTrace(b,`${r.name} | ${recDate(match.twinIdx)} | ${instAt(match.twinIdx)||'instrument NA'} | twin`,'dash')
     ];
     traces[0].line={color:'#13294B',width:2.2};
     traces[1].line={color:'#2986D2',width:1.8,dash:'dash'};
@@ -550,20 +613,111 @@ async function plotRecurrencePair() {
   }
 }
 
-function exportRecurrenceCSV() {
-  if (!CURRENT_RECURRENCE) return;
-  const header = ['target_sn','twin_sn','target_epoch_count','total_target_epochs','fraction','mean_cosine_similarity','best_cosine_similarity','target_idx','twin_idx','rank','cosine_similarity','target_date','twin_date'];
-  const rows = [header];
-  for (const r of CURRENT_RECURRENCE.shown) for (const m of r.bestMatches) rows.push([
-    CURRENT_RECURRENCE.targetSN,r.name,r.nEpochs,CURRENT_RECURRENCE.rec.totalEpochs,r.fraction,r.meanSimilarity,r.bestSimilarity,
-    m.targetIdx,m.twinIdx,m.rank,m.similarity,(DATA.jd_str&&DATA.jd_str[m.targetIdx])||dateAt(m.targetIdx),(DATA.jd_str&&DATA.jd_str[m.twinIdx])||dateAt(m.twinIdx)
-  ]);
-  const csv = rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');
-  const url = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  const a=document.createElement('a');a.href=url;a.download='recurrent_twins_'+safeFilenamePart(CURRENT_RECURRENCE.targetSN)+'.csv';a.click();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
+// TWINS_LEGEND_PLOTREADY_CSV_NO_RECON_V1
+// Export wavelength + target/twin flux arrays for EVERY matched observation of the
+// selected recurrent twin, not only the currently plotted pair. Each spectrum
+// pair is recoverable by pair_id, including same-night observations.
+function recurrenceCsvCell(value) {
+  const str = value === null || value === undefined ? '' : String(value);
+  // Quote all fields and escape embedded quotes; guard against CSV formula injection.
+  const safe = /^[=+@\t\r]/.test(str) ? "'" + str : str;
+  return '"' + safe.replace(/"/g,'""') + '"';
 }
-
+function triggerCsvDownload(csv, filename) {
+  const url = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+// RECURRENCE_UNIFIED_EXPORT_V1
+// Summary rows cover ALL recurrent objects; spectrum rows cover the selected twin.
+// The row_type field distinguishes summary from wavelength samples.
+async function exportUnifiedRecurrenceCSV() {
+  const current = CURRENT_RECURRENCE;
+  const selected = current && current.shown.find(r => snKey(r.name) === REC_PAIR_SN);
+  if (!current || !selected) {
+    alert('Select a recurrent twin first.');
+    return;
+  }
+  const button = $('downloadRecurrence');
+  if (button.disabled) return;
+  const oldText = button.textContent;
+  button.disabled = true;
+  const columns = [
+    'row_type','target_sn','twin_sn','target_epoch_count','total_target_epochs',
+    'recurrence_rate','mean_cosine_similarity','best_cosine_similarity',
+    'pair_id','target_spec_id','twin_spec_id','target_idx','twin_idx',
+    'target_date','twin_date','target_instrument','twin_instrument',
+    'cosine_similarity','spectral_rmse','common_valid_bins',
+    'wavelength_angstrom','target_flux_normalized','twin_flux_normalized',
+    'target_valid','twin_valid'
+  ];
+  const lines = [columns.map(recurrenceCsvCell).join(',')];
+  const pushRow = values => lines.push(columns.map(key => recurrenceCsvCell(values[key])).join(','));
+  try {
+    // Preserve the complete recurrence summary without downloading every object's spectra.
+    for (const object of current.shown) {
+      pushRow({
+        row_type:'summary',target_sn:current.targetSN,twin_sn:object.name,
+        target_epoch_count:object.nEpochs,
+        total_target_epochs:current.rec.totalEpochs,
+        recurrence_rate:object.fraction,
+        mean_cosine_similarity:object.meanSimilarity,
+        best_cosine_similarity:object.bestSimilarity
+      });
+    }
+    const matches=sortedRecurrenceMatches(selected);
+    for (let start=0;start<matches.length;start+=6) {
+      const batch=matches.slice(start,start+6);
+      button.textContent=`Preparing spectra ${Math.min(start+batch.length,matches.length)}/${matches.length}…`;
+      const loaded=await Promise.all(batch.map(async m=>{
+        const [a,b]=await Promise.all([prefetchSpectrum(m.targetIdx),prefetchSpectrum(m.twinIdx)]);
+        return {m,a,b,stats:computeSpectralRMSE(a,b)};
+      }));
+      for (const {m,a,b,stats} of loaded) {
+        const meta={
+          row_type:'spectrum',target_sn:current.targetSN,twin_sn:selected.name,
+          target_epoch_count:selected.nEpochs,
+          total_target_epochs:current.rec.totalEpochs,
+          recurrence_rate:selected.fraction,
+          mean_cosine_similarity:selected.meanSimilarity,
+          best_cosine_similarity:selected.bestSimilarity,
+          pair_id:`${m.targetIdx}:${m.twinIdx}`,
+          target_spec_id:DATA.spec_id[m.targetIdx],
+          twin_spec_id:DATA.spec_id[m.twinIdx],
+          target_idx:m.targetIdx,twin_idx:m.twinIdx,
+          target_date:recDate(m.targetIdx),twin_date:recDate(m.twinIdx),
+          target_instrument:instAt(m.targetIdx),twin_instrument:instAt(m.twinIdx),
+          cosine_similarity:m.similarity,
+          spectral_rmse:stats.rmse===null?'':stats.rmse,
+          common_valid_bins:stats.nCommon
+        };
+        for(let k=0;k<DATA.wave.length;k++) {
+          const aValid=Boolean(a.mask[k]), bValid=Boolean(b.mask[k]);
+          pushRow({...meta,
+            wavelength_angstrom:DATA.wave[k],
+            target_flux_normalized:aValid?a.flux[k]:'',
+            twin_flux_normalized:bValid?b.flux[k]:'',
+            target_valid:aValid?1:0,twin_valid:bValid?1:0
+          });
+        }
+      }
+    }
+    const filename='recurrent_twins_'+safeFilenamePart(current.targetSN)+
+      '_selected_'+safeFilenamePart(selected.name)+'.csv';
+    triggerCsvDownload(lines.join('\n')+'\n',filename);
+  } catch(err) {
+    console.error('Unified recurrence export failed:',err);
+    alert('Could not export recurrence CSV: '+String(err));
+  } finally {
+    button.disabled=false;
+    button.textContent=oldText;
+  }
+}
 
 function computeSpectralRMSE(targetData, twinData) {
   let ss = 0.0, n = 0, maxAbs = 0.0;
@@ -709,12 +863,7 @@ async function renderSelectedRecurrencePairsTable() {
     el.innerHTML = '<div class="small-note">No recurrent twin selected.</div>';
     return;
   }
-  const matches = [...object.bestMatches].sort((a,b) => {
-    const jdA = Number(DATA.jd[a.targetIdx]);
-    const jdB = Number(DATA.jd[b.targetIdx]);
-    return (Number.isFinite(jdA) ? jdA : Infinity) -
-      (Number.isFinite(jdB) ? jdB : Infinity) || a.targetIdx - b.targetIdx;
-  });
+  const matches = sortedRecurrenceMatches(object);
   const isActive = () => token === selectedRecurrenceTableToken &&
     $("recurrentOnly").checked && CURRENT_RECURRENCE === current &&
     REC_PAIR_SN === snKey(object.name);
@@ -748,13 +897,13 @@ async function renderSelectedRecurrencePairsTable() {
   const row = (entry, isTwin) => {
     const {m,stats} = entry;
     const idx = isTwin ? m.twinIdx : m.targetIdx;
-    const chosen = m.epoch === REC_PAIR_EPOCH;
+    const chosen = recurrenceMatchId(m) === REC_PAIR_EPOCH;
     const role = isTwin ? 'Twin' : 'Target';
     const label = chosen ? ' selected-epoch-row' : '';
     // Similarity and spectral RMSE are measured between the two spectra;
     // display them on the twin row, never as a self-comparison for the target.
     return '<tr class="pair-date-row' + label + '" data-epoch="' +
-      escapeHtml(m.epoch) + '" tabindex="0" title="Select this matching target date">' +
+      escapeHtml(recurrenceMatchId(m)) + '" tabindex="0" title="Select this matching target observation">' +
       cell(role) + cell(DATA.sn[idx]) +
       cell(isTwin ? fmtNum(m.similarity,6) : '—',true) +
       cell(isTwin ? fmtNum(m.distance,6) : '—',true) +
@@ -765,11 +914,11 @@ async function renderSelectedRecurrencePairsTable() {
   };
   let html = '<div class="table-title">Matched spectra: ' +
     escapeHtml(current.targetSN) + ' ↔ ' + escapeHtml(object.name) + '</div>' +
-    '<div class="table-subtitle">' + matches.length + ' matched target observing dates. ' +
-    'Each date has two rows: the actual target spectrum and its matched twin spectrum. ' +
+    '<div class="table-subtitle">' + matches.length + ' matched target observations across ' + object.nEpochs + ' distinct dates. ' +
+    'Each matched observation has two rows: the actual target spectrum and its matched twin spectrum. ' +
     'Date, z, type, instrument and source belong to the SN on that row. ' +
     'Cosine and RMSE on the twin row compare that exact pair, using mutually valid bins. ' +
-    'Click either row to select and plot that date.</div>' +
+    'Click either row to select and plot that observation.</div>' +
     '<table class="neighbor-table"><thead><tr>' +
     '<th>Role</th><th>SN</th><th>Cosine Similarity</th><th>Cosine Distance</th>' +
     '<th>RMSE</th><th>Common bins</th><th>z</th><th>Type</th><th>Date</th>' +
@@ -781,13 +930,7 @@ async function renderSelectedRecurrencePairsTable() {
   el.innerHTML = html;
   el.querySelectorAll('tr[data-epoch]').forEach(tr => {
     const selectDate = () => {
-      REC_PAIR_EPOCH = tr.dataset.epoch;
-      const sel = $('recurrencePairEpoch');
-      if (sel) sel.value = REC_PAIR_EPOCH;
-      // Update highlight only; no need to redraw/re-fetch the entire dashboard.
-      el.querySelectorAll('.pair-date-row').forEach(row =>
-        row.classList.toggle('selected-epoch-row', row.dataset.epoch === REC_PAIR_EPOCH));
-      plotRecurrencePair();
+      selectRecurrenceMatch(tr.dataset.epoch);
     };
     tr.addEventListener('click',selectDate);
     tr.addEventListener('keydown',ev => {
@@ -802,17 +945,18 @@ async function renderSelectedRecurrencePairsTable() {
   const values = valid.map(o => cosineMode ? o.m.similarity : o.stats.rmse);
   Plotly.react('rmse',[{
     type:'bar',
-    x:valid.map(o=>date(o.m.targetIdx)), y:values,
+    x:valid.map((o,i)=>i+1), y:values,
     text:values.map(x=>x.toFixed(5)), textposition:'auto',
     marker:{color:'#13294B'},
-    customdata:valid.map(o=>[date(o.m.targetIdx),date(o.m.twinIdx)]),
-    hovertemplate:'Target date: %{customdata[0]}<br>Twin date: %{customdata[1]}' +
+    customdata:valid.map(o=>[date(o.m.targetIdx),date(o.m.twinIdx),instAt(o.m.targetIdx),instAt(o.m.twinIdx),DATA.spec_id[o.m.targetIdx]]),
+    hovertemplate:'Target: %{customdata[0]} / %{customdata[2]}<br>Twin: %{customdata[1]} / %{customdata[3]}' +
       '<br>Value: %{y:.6f}<extra></extra>'
   }],{
     title:(cosineMode ? 'Latent cosine similarity' : 'Spectral RMSE') +
       ' — ' + current.targetSN + ' vs ' + object.name,
     autosize:true,margin:{l:60,r:15,t:55,b:140},
-    xaxis:{title:'Target observing date',tickangle:-45},
+    xaxis:{title:'Matched target observation (chronological)',dtick:1,tickmode:'array',
+      tickvals:valid.map((o,i)=>i+1),ticktext:valid.map(o=>date(o.m.targetIdx)+' / '+(instAt(o.m.targetIdx)||'NA')),tickangle:-45},
     yaxis:{title:cosineMode?'Cosine similarity':'RMSE (normalized flux)',
       ...(cosineMode ? {} : {rangemode:'tozero'})}
   },{responsive:true});
@@ -1106,6 +1250,7 @@ function prefetchSpectrum(i) {
 function twinLabel(prefix, j) {
   return prefix + " " + (DATA.sn[j] || "") +
     " | " + (DATA.jd_str[j] || DATA.obs_date[j] || "date NA") +
+    " | " + (instAt(j) || "instrument NA") +
     " | " + (DATA.obj_type[j] || "type NA") +
     " | z=" + (fmtNum(DATA.z[j], 6) || "NA");
 }
@@ -1137,7 +1282,7 @@ async function updateAll(i) {
   const recurrenceRows = onlyRecurrent && CURRENT_RECURRENCE
     ? CURRENT_RECURRENCE.shown.map(r => {
         const selected = snKey(r.name) === REC_PAIR_SN;
-        const m = (selected && r.bestMatches.find(x => x.epoch === REC_PAIR_EPOCH)) || r.bestMatches[0];
+        const m = (selected && r.matches.find(x => recurrenceMatchId(x) === REC_PAIR_EPOCH)) || r.bestMatches[0];
         return {j:m.twinIdx, d:m.distance, matchedTargetIdx:m.targetIdx,
                 matchedDays:r.nEpochs, matchedTotal:CURRENT_RECURRENCE.rec.totalEpochs};
       })
@@ -1196,15 +1341,11 @@ async function updateAll(i) {
 
   const specData = [
     spectraTrace(targetData, twinLabel("target", i), null),
-    reconTrace(targetData, "target DAEP reconstruction"),
   ];
   goodTwins.forEach(({j, data, rank}) => {
     specData.push(spectraTrace(data, twinLabel("twin#" + (rank + 1), j), rank === 0 ? "dot" : "dash"));
   });
-  // Reconstructions start hidden; clicking a legend entry shows one.
-  goodTwins.forEach(({data, rank}) => {
-    specData.push(reconTrace(data, "twin#" + (rank + 1) + " DAEP reconstruction"));
-  });
+  // Only observed/processed spectra are plotted; reconstruction arrays remain in the bundle.
   Plotly.react("spec", specData, {
     title: "Spectra overlay (target + top twins)",
     autosize: true,
@@ -1295,7 +1436,7 @@ function init() {
     window.location.assign(url.toString());
   });
   $("downloadSelected").addEventListener("click", downloadSelectedOutputs);
-  $("downloadRecurrence").addEventListener("click", exportRecurrenceCSV);
+  $("downloadRecurrence").addEventListener("click", exportUnifiedRecurrenceCSV);
   $("recurrenceModeButton").addEventListener("click", () => {
     const enabled = !$("recurrentOnly").checked;
     $("recurrentOnly").checked = enabled;
@@ -1314,13 +1455,10 @@ function init() {
   });
 
   $("recurrencePairEpoch").addEventListener("change", evt => {
-    REC_PAIR_EPOCH = evt.target.value;
-    if ($("recurrentOnly").checked && $("obsSelect").value) {
-      updateAll(parseInt($("obsSelect").value));
-    } else {
-      plotRecurrencePair();
-    }
+    selectRecurrenceMatch(evt.target.value);
   });
+  $("recurrencePairPrev").addEventListener("click", () => stepRecurrenceMatch(-1));
+  $("recurrencePairNext").addEventListener("click", () => stepRecurrenceMatch(1));
   ["recurrenceTopK", "recurrenceMinEpochs"].forEach(id =>
     $(id).addEventListener("change", () => { if ($("obsSelect").value) updateAll($("obsSelect").value); })
   );
