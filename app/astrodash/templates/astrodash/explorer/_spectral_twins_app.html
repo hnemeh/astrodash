@@ -281,10 +281,7 @@ function literaturePhaseHtml(i) {
   const phaseHTML = sourceURL
     ? '<a class="literature-phase-link" href="' + escapeHtml(sourceURL) + '" target="_blank" rel="noopener noreferrer" title="' + escapeHtml(citation || source) + '">' + escapeHtml(label) + '</a>'
     : escapeHtml(label);
-  const citeHTML = citeURL && citation
-    ? ' <a href="' + escapeHtml(citeURL) + '" target="_blank" rel="noopener noreferrer" title="' + escapeHtml(citation) + '" aria-label="Literature citation: ' + escapeHtml(citation) + '" style="font-size:11px;white-space:nowrap">[citation]</a>'
-    : (citation ? ' <span title="' + escapeHtml(citation) + '" style="font-size:11px">[citation]</span>' : '');
-  return '<td>' + phaseHTML + citeHTML + '</td>';
+  return '<td>' + phaseHTML + '</td>';
 }
 function literatureFilterActive() { return $('filterLiteraturePhase').checked; }
 function literaturePass(i) {
