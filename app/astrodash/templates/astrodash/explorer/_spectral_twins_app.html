@@ -249,6 +249,8 @@ const $ = id => document.getElementById(id);
 // Authoritative observation-time lookup, not model phase. Filled from the
 // catalog file at startup; stays empty when there is none.
 let LITERATURE_CATALOG = {};
+// How long the page waits for the catalog after the metadata has loaded.
+const LITERATURE_CATALOG_WAIT_MS = 10000;
 let LITERATURE_ROWS = null;
 function literatureKey(sn, date) {
   const name = String(sn || '').toLowerCase().replace(/[^a-z0-9]/g,'');
@@ -1649,10 +1651,11 @@ async function loadMetadata() {
 
 // The literature-phase catalog is optional: without it every phase cell reads
 // N/A, so any failure to load it yields an empty catalog rather than an error.
-async function loadLiteratureCatalog() {
+// Aborting through the signal counts as a failure.
+async function loadLiteratureCatalog(signal) {
   if (!CONFIG.literatureUrl) return {};
   try {
-    const r = await fetch(CONFIG.literatureUrl);
+    const r = await fetch(CONFIG.literatureUrl, {signal});
     if (!r.ok) return {};
     const catalog = await r.json();
     return catalog && typeof catalog === "object" && !Array.isArray(catalog) ? catalog : {};
@@ -1682,7 +1685,8 @@ async function boot() {
     return;
   }
   // Start the catalog download alongside the metadata so it adds no wait.
-  const catalogLoad = loadLiteratureCatalog();
+  const catalogAbort = new AbortController();
+  const catalogLoad = loadLiteratureCatalog(catalogAbort.signal);
   try {
     DATA = await loadMetadata();
     checkMetadata();
@@ -1690,7 +1694,11 @@ async function boot() {
     showLoadFailure("Could not load the spectral twins data (" + e.message + "). Try reloading the page.");
     return;
   }
+  // A catalog request that stalls must not hold the explorer once its data has
+  // loaded, so it gets a bounded wait from here and is then abandoned.
+  const catalogDeadline = setTimeout(() => catalogAbort.abort(), LITERATURE_CATALOG_WAIT_MS);
   LITERATURE_CATALOG = await catalogLoad;
+  clearTimeout(catalogDeadline);
   $("loadingPanel").hidden = true;
   $("controls").hidden = false;
   $("dashboardGrid").hidden = false;
