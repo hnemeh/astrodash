@@ -176,3 +176,12 @@ class SpectralTwinsDatasetTests(TwinsPageTestCase):
         (self.literature_dir / daep_bundle.LITERATURE_FILENAME).write_text("{}")
         response = self.client.get(self.url)
         self.assertContains(response, f'"literatureUrl": "{catalog_url}"')
+
+    def test_page_html_stays_small_and_leaves_the_catalog_out(self):
+        self._install_all()
+        for dataset in ("rest_frame", "observer_frame", "multi_object_rest"):
+            with self.subTest(dataset=dataset):
+                response = self.client.get(self.url, {"dataset": dataset})
+                self.assertEqual(response.status_code, 200)
+                self.assertLess(len(response.content), 100_000)
+                self.assertNotContains(response, "literature-phase-catalog")
