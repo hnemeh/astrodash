@@ -15,11 +15,7 @@
     {% include "astrodash/explorer/_spectral_twins_app.html" %}
   {% elif bundle_state == "missing" %}
     <div class="alert alert-secondary">
-      {% if bundle_state == "invalid" %}
-      The spectral twins data has an unsupported or incomplete format.
-      {% else %}
       The spectral twins data is not installed on this server yet.
-      {% endif %}
     </div>
   {% else %}
     <div class="alert alert-warning">
