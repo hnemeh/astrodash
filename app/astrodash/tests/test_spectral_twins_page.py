@@ -23,7 +23,7 @@ class TwinsPageTestCase(TestCase):
         self.bundle_dir = root / "daep"
         self.observer_dir = root / "daep_observer_frame"
         self.multi_dir = root / "daep_multi_object"
-        self.literature_dir = root / "daep_literature"
+        self.literature_dir = root / "phase_literature"
         patcher = patch(
             "astrodash.ui_views.get_config",
             return_value=SimpleNamespace(
@@ -163,19 +163,13 @@ class SpectralTwinsDatasetTests(TwinsPageTestCase):
         self.assertContains(response, "format this page does not recognize")
         self.assertNotContains(response, "observer_frame/data_meta.json")
 
-    def test_catalog_url_is_given_only_when_the_catalog_is_installed(self):
+    def test_page_uses_reviewed_literature_endpoint(self):
         self._install_descriptor()
-        catalog_url = (
-            TWINS_BUNDLE_URL_PREFIX
-            + daep_bundle.LITERATURE_URL_SUFFIX
-            + daep_bundle.LITERATURE_FILENAME
+        response = self.client.get(self.url)
+        self.assertContains(
+            response,
+            '"literatureUrl": "/astrodash/twins/reviewed-literature.json"',
         )
-        response = self.client.get(self.url)
-        self.assertNotContains(response, catalog_url)
-        self.literature_dir.mkdir()
-        (self.literature_dir / daep_bundle.LITERATURE_FILENAME).write_text("{}")
-        response = self.client.get(self.url)
-        self.assertContains(response, f'"literatureUrl": "{catalog_url}"')
 
     def test_page_html_stays_small_and_leaves_the_catalog_out(self):
         self._install_all()
