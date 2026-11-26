@@ -1045,13 +1045,18 @@ function populateObsDropdown(sn) {
 }
 
 function latentLayout() {
+  const note = document.getElementById("latentColorNote");
+  if (note) {
+    note.textContent =
+      "Colored by: " + colorFieldLabel(CURRENT_COLOR_FIELD) +
+      (literatureFilterActive() ? " · Literature Phase Filter" : "");
+  }
   return {
-    title: "Full-latent space (UMAP) — colored by " + colorFieldLabel(CURRENT_COLOR_FIELD) +
-        (literatureFilterActive() ? " | Literature Phase filter" : ""),
+    title: "Spectral Latent Space",
     autosize: true,
     margin: {l: 45, r: 10, t: 40, b: 115},
-    xaxis: {title: "UMAP 1"},
-    yaxis: {title: "UMAP 2"},
+    xaxis: {title: "UMAP X"},
+    yaxis: {title: "UMAP Y"},
     legend: {orientation: "h", x: 0, xanchor: "left", y: -0.35, yanchor: "top"},
     uirevision: "latent-zoom-lock"
   };
@@ -1175,7 +1180,7 @@ function renderRMSEPanel(targetIdx, twinEntries) {
   CURRENT_METRIC_ENTRIES = {targetIdx, twinEntries};
   const cosineMode = $("metricMode").value === "cosine";
   const good = twinEntries.filter(o => cosineMode ? Number.isFinite(o.distance) : (o.stats && Number.isFinite(o.stats.rmse)));
-  const metricLabel = cosineMode ? "DAEP latent cosine similarity" : "Spectral RMSE";
+  const metricLabel = cosineMode ? "Latent Cosine Similarity" : "Spectral RMSE";
   if (!good.length) {
     Plotly.react("rmse", [], {
       title: metricLabel, autosize: true, margin: {l: 65, r: 15, t: 55, b: 140},
@@ -1196,7 +1201,7 @@ function renderRMSEPanel(targetIdx, twinEntries) {
     type: "bar", x: labels, y: vals, text: vals.map(v => v.toFixed(5)), textposition: "auto",
     hovertext: hover, hoverinfo: "text", marker: {color: "#13294B"}
   }], {
-    title: metricLabel + " — " + (DATA.sn[targetIdx] || "") + " (idx=" + targetIdx + ")",
+    title: metricLabel + " — " + (DATA.sn[targetIdx] || "Target"),
     autosize: true, margin: {l: 65, r: 15, t: 55, b: 140},
     xaxis: {title: "Displayed twins", tickangle: -35},
     yaxis: Object.assign({title: cosineMode ? "Cosine similarity (latent)" : "RMSE (normalized flux)"},
@@ -1349,7 +1354,7 @@ async function updateAll(i) {
   });
   // Only observed/processed spectra are plotted; reconstruction arrays remain in the bundle.
   Plotly.react("spec", specData, {
-    title: "Spectra overlay (target + top twins)",
+    title: "Target and Twin Spectra",
     autosize: true,
     margin: {l: 55, r: 15, t: 50, b: 150},
     xaxis: {title: daepWavelengthLabel()},
@@ -1472,7 +1477,7 @@ function initUploadedSpectra() {
     const note=document.createElement('p');
     note.className='small-note';
     note.textContent=mode==='rest_frame'
-      ? 'Rest-frame DAEP: make sure your uploaded wavelengths are already de-redshifted. MW and air/vacuum corrections are not applied to uploads.'
+      ? 'Rest-frame: make sure your uploaded wavelengths are already de-redshifted. MW and air/vacuum corrections are not applied to uploads.'
       : 'MW and air/vacuum corrections are not applied to uploaded spectra.';
     box.appendChild(note);
     for (const row of rows) {
@@ -1484,7 +1489,7 @@ function initUploadedSpectra() {
     }
     if(mode==='multi_object_rest') {
       const message=document.createElement('div');
-      message.textContent='Multi-Object DAEP uses rest-frame wavelengths; upload spectra that are already de-redshifted.';
+      message.textContent='Multi-Object uses rest-frame wavelengths; upload spectra that are already de-redshifted.';
       box.appendChild(message);
     }
     uploadScientificEligibility();
@@ -1649,7 +1654,7 @@ async function renderUploadedSpectrum(id) {
   const lines=[trace];
   overlay.forEach((o,j)=>lines.push(spectraTrace(loaded.get(o.reference_index),twinLabel('twin#'+(j+1),o.reference_index))));
   Plotly.react('spec',lines,{
-    title:'Uploaded Target + Spectroscopic Twin Spectra',autosize:true,
+    title:'Uploaded Spectrum & Nearest Neighbors',autosize:true,
     margin:{l:70,r:20,t:50,b:155},
     legend:{orientation:'h',x:0,y:-0.22,yanchor:'top',font:{size:11}},
     xaxis:{title:daepWavelengthLabel()},yaxis:{title:'Normalized flux'}
@@ -1805,10 +1810,17 @@ function init() {
   populateSnDropdown(snList);
   populateTargetDropdown(getMatchedTargets("", 500));
   if (snList.length > 0) {
-    snSel.value = snList[0];
-    ensureTargetOption(snSel.value);
-    targetSel.value = snSel.value;
-    populateObsDropdown(snSel.value);
+    // Default to SN 2023mjq when present in this model's dataset.
+    const preferredSN = snList.find(
+      sn => reviewedSNIdentity(sn) === "2023mjq"
+    );
+
+    const initialSN = preferredSN || snList[0];
+
+    snSel.value = initialSN;
+    ensureTargetOption(initialSN);
+    targetSel.value = initialSN;
+    populateObsDropdown(initialSN);
   }
 
   $("uploadOnlySearchButton").addEventListener("click",()=>updateUploadOnlySearch(true));

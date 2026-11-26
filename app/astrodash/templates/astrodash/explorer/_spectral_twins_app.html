@@ -81,6 +81,344 @@ the client needs to cross-check it.
   #twins-app .pair-date-row:nth-of-type(even) { border-bottom:2px solid #e6eaf0; }
   #twins-app #recurrencePairEpoch { flex: 1 1 320px; min-width: 220px; }
   #twins-app #recurrencePairPrev:disabled, #twins-app #recurrencePairNext:disabled { opacity: 0.45; }
+
+/* TWINS_CLEAN_LAYOUT_2026 */
+
+#twins-app .twins-clean-panel {
+  padding: 18px 20px;
+  border: 1px solid #dce2e8;
+  border-radius: 12px;
+  background: #fff;
+  min-width: 0;
+}
+
+#twins-app .twins-clean-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+#twins-app .twins-clean-heading strong {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+#twins-app .twins-clean-heading span {
+  font-size: 12px;
+  color: #8290a0;
+}
+
+#twins-app .twins-clean-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+#twins-app .twins-clean-field > label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #596779;
+  margin: 0;
+}
+
+#twins-app .twins-clean-field > input,
+#twins-app .twins-clean-field > select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 37px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  padding: 6px 9px;
+  background: #fff;
+}
+
+#twins-app .twins-clean-search {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+#twins-app .twins-clean-search .twins-clean-field {
+  flex: 1;
+}
+
+#twins-app .twins-clean-search button {
+  min-height: 37px;
+}
+
+#twins-app .twins-clean-reference-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.4fr;
+  gap: 14px;
+  min-width: 0;
+}
+
+#twins-app .twins-clean-options {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 22px;
+  margin-top: 16px;
+}
+
+#twins-app .twins-clean-options label {
+  margin: 0;
+  font-size: 13px;
+}
+
+#twins-app .twins-clean-options > .small-note {
+  margin-left: auto;
+  color: #84909e;
+}
+
+#twins-app .twins-clean-k {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+#twins-app .twins-clean-k label {
+  margin: 0;
+}
+
+#twins-app .twins-clean-k input {
+  width: 70px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+}
+
+#twins-app .twins-clean-date {
+  margin-top: 15px;
+  padding-top: 12px;
+  border-top: 1px solid #e8edf2;
+  color: #697789;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+#twins-app .twins-clean-settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.3fr 1.3fr;
+  gap: 16px;
+  align-items: end;
+}
+
+#twins-app .twins-clean-slider > div {
+  min-height: 37px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#twins-app .twins-clean-slider input[type="range"] {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+}
+
+#twins-app .twins-clean-settings-bottom {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  padding-top: 15px;
+  margin-top: 16px;
+  border-top: 1px solid #e8edf2;
+}
+
+#twins-app .twins-clean-settings-bottom label {
+  margin: 0;
+}
+
+#twins-app .twins-clean-settings-bottom
+#downloadSelected {
+  margin-left: auto;
+}
+
+/* Uploaded files remain a separate section. */
+#twins-app .twins-clean-upload {
+  background: #fafbfd;
+  padding: 14px 18px;
+  border-radius: 12px;
+}
+
+#twins-app .twins-clean-upload
+#twinsUploadForm > .small-note {
+  font-size: 12px;
+  color: #718096;
+  margin-bottom: 0 !important;
+}
+
+#twins-app #uploadOnlySearchPanel {
+  border-top: 1px solid #e8edf2;
+  padding-top: 12px;
+}
+
+/* Hide the empty upload search until a real upload exists. */
+#twins-app #uploadOnlySearchPanel:not(
+  :has(#uploadOnlySelect option:not([value=""]))
+) {
+  display: none !important;
+}
+
+@media (max-width: 1050px) {
+  #twins-app .twins-clean-settings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  #twins-app .twins-clean-reference-grid,
+  #twins-app .twins-clean-settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #twins-app .twins-clean-search {
+    flex-wrap: wrap;
+  }
+}
+
+
+/* TWINS_REFERENCE_COMPACT_FIX */
+#twins-app .twins-clean-reference-grid,
+#twins-app .twins-clean-search {
+  align-items: end;
+}
+
+#twins-app .twins-clean-search .twins-clean-field {
+  flex: 1 1 auto;
+}
+
+#twins-app .twins-clean-field > #targetSearch,
+#twins-app .twins-clean-field > #targetSelect,
+#twins-app .twins-clean-field > #snSelect,
+#twins-app .twins-clean-field > #obsSelect {
+  flex: 0 0 38px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+#twins-app .twins-clean-reference-grid {
+  grid-template-columns: 1fr 1fr 1.5fr;
+  gap: 12px;
+}
+
+#twins-app .twins-clean-panel {
+  padding: 15px 18px;
+}
+
+#twins-app .twins-clean-heading {
+  margin-bottom: 12px;
+}
+
+#twins-app .twins-clean-search {
+  margin-bottom: 12px;
+}
+
+#twins-app .twins-clean-options {
+  margin-top: 12px;
+}
+
+#twins-app .twins-clean-date {
+  margin-top: 12px;
+  padding-top: 10px;
+}
+
+@media (max-width: 700px) {
+  #twins-app .twins-clean-reference-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* UMAP_COLOR_TOOLBAR_FIX */
+#twins-app #latentCard .panel-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+#twins-app #latentCard .latent-color-note {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+  margin-right: auto;
+}
+
+#twins-app #latentCard .expandBtn {
+  flex-shrink: 0;
+}
+
+
+/* COMPACT_TWINS_OVERVIEW */
+#twins-app #controls {
+  gap: 7px !important;
+}
+
+#twins-app .twins-clean-panel {
+  padding: 10px 14px !important;
+}
+
+#twins-app .twins-clean-heading {
+  margin-bottom: 8px !important;
+}
+
+#twins-app .twins-clean-search {
+  margin-bottom: 8px !important;
+}
+
+#twins-app .twins-clean-reference-grid {
+  gap: 10px !important;
+}
+
+#twins-app .twins-clean-options {
+  margin-top: 8px !important;
+}
+
+#twins-app .twins-clean-date {
+  margin-top: 8px !important;
+  padding-top: 7px !important;
+}
+
+#twins-app .twins-clean-settings-bottom {
+  margin-top: 8px !important;
+  padding-top: 8px !important;
+}
+
+#twins-app .twins-clean-upload {
+  padding: 9px 14px !important;
+  margin-bottom: 5px !important;
+}
+
+#twins-app .twins-clean-upload #twinsUploadFiles {
+  margin: 3px 0 !important;
+}
+
+#twins-app .twins-clean-upload .small-note {
+  margin: 3px 0 !important;
+}
+
+#twins-app .twins-clean-panel.mt-2 {
+  margin-top: 6px !important;
+}
+
+#twins-app .dashboard-grid {
+  gap: 10px !important;
+}
+
 </style>
 
 <div id="twins-app">
@@ -94,7 +432,7 @@ the client needs to cross-check it.
   <div id="controls" hidden>
 
     <!-- BEGIN SESSION-ONLY DAEP SPECTRUM UPLOAD -->
-    <div class="twins-card mt-2" id="twinsUploadPanel" style="margin-bottom:10px">
+    <div class="twins-card mt-2 twins-clean-upload" id="twinsUploadPanel" style="margin-bottom:10px">
       <form id="twinsUploadForm" method="post" enctype="multipart/form-data" action="{% url 'astrodash:twins_upload_match' %}">
         {% csrf_token %}
         <label for="twinsUploadFiles"><strong>Upload spectra</strong> (multiple files or ZIP)</label>
@@ -121,33 +459,120 @@ the client needs to cross-check it.
       </form>
     </div>
     <!-- END SESSION-ONLY DAEP SPECTRUM UPLOAD -->
+    <!-- TWINS_CLEAN_LAYOUT_2026 -->
 
-    <div class="twins-row twins-card">
-      <label for="targetSearch">Target search:</label>
-      <input id="targetSearch" type="text" placeholder="SN name, idx, type, source, instrument, phase, z..."/>
-      <button id="targetSearchButton" class="btn btn-sm btn-outline-secondary" type="button">Search</button>
-      <label for="targetSelect">Search matches:</label>
-      <select id="targetSelect"></select>
-      <label for="snSelect">All SNe:</label>
-      <select id="snSelect"></select>
-      <label for="obsSelect">Observation:</label>
-      <select id="obsSelect"></select>
-      <label><input id="excludeSameSN" type="checkbox"/> Exclude same SN</label>
-      <label><input id="uniqueTwinSN" type="checkbox"/> One obs per twin SN</label>
-      <label for="kInput">Neighbor table top-k:</label>
-      <input id="kInput" type="number" min="2" step="1"/>
-      <span class="small-note ml-auto">Click a point in latent space to update.</span>
-    </div>
+    <section class="twins-card twins-clean-panel mt-2"
+             aria-label="Reference spectra">
+      <div class="twins-clean-heading">
+        <strong>Reference spectra</strong>
+        <span>Explore the existing sample</span>
+      </div>
 
-    <div class="twins-row twins-card mt-2">
-      <label for="colorBy">Color by:</label>
-      <select id="colorBy">
+      <div class="twins-clean-search">
+        <div class="twins-clean-field">
+          <label for="targetSearch">Search reference sample</label>
+          <input id="targetSearch" type="text"
+            placeholder="SN name, type, source, instrument, phase, z..."/>
+        </div>
+        <button id="targetSearchButton"
+          class="btn btn-sm btn-outline-secondary"
+          type="button">Search</button>
+      </div>
+
+      <div class="twins-clean-reference-grid">
+        <div class="twins-clean-field">
+          <label for="targetSelect">Search matches</label>
+          <select id="targetSelect"></select>
+        </div>
+
+        <div class="twins-clean-field">
+          <label for="snSelect">All supernovae</label>
+          <select id="snSelect"></select>
+        </div>
+
+        <div class="twins-clean-field">
+          <label for="obsSelect">Observation</label>
+          <select id="obsSelect"></select>
+        </div>
+      </div>
+
+      <div class="twins-clean-options">
+        <label>
+          <input id="excludeSameSN" type="checkbox"/>
+          Exclude same SN
+        </label>
+        <label>
+          <input id="uniqueTwinSN" type="checkbox"/>
+          One obs per twin SN
+        </label>
+        <div class="twins-clean-k">
+          <label for="kInput">Neighbor table top-k</label>
+          <input id="kInput" type="number" min="2" step="1"/>
+        </div>
+        <span class="small-note">
+          Click a point in latent space to update.
+        </span>
+      </div>
+
+      <div id="twins-reference-date-notice"
+           class="twins-clean-date">
+        Rest-frame reference sample: September 3, 1937 –
+        June 1, 2025. Other model datasets may have
+        different observation-date ranges.
+      </div>
+    </section>
+
+    <section class="twins-card twins-clean-panel mt-2"
+             aria-label="Model and display settings">
+      <div class="twins-clean-heading">
+        <strong>Model &amp; display</strong>
+        <span>Customize the visualization</span>
+      </div>
+
+      <div class="twins-clean-settings-grid">
+        <div class="twins-clean-field">
+          <label for="modelMode">Model and dataset</label>
+          <select id="modelMode" aria-label="Model and Dataset">
+        {% for option in twins_datasets %}
+          <option value="{{ option.id }}" {% if option.id == twins_selected_dataset %}selected{% endif %} {% if not option.available %}disabled{% endif %}>{{ option.label }}{% if not option.available %} (data missing){% endif %}</option>
+        {% endfor %}
+      </select>
+        </div>
+
+        <div class="twins-clean-field">
+          <label for="colorBy">Color by</label>
+          <select id="colorBy">
         <option value="raw_type">Raw type</option>
         <option value="canonical_type" selected>Canonical type</option>
         <option value="broad_type">Broad type</option>
       </select>
-      <label title="Filter the UMAP and nearest-neighbor list by observer-frame days relative to literature peak"><input id="filterLiteraturePhase" type="checkbox"/> Literature Phase</label>
-      <div id="literaturePhaseControls" hidden>
+        </div>
+
+        <div class="twins-clean-field twins-clean-slider">
+          <label for="latentN">Highlight twins in latent space</label>
+          <div>
+            <input id="latentN" type="range"
+                   min="1" max="25" value="10"/>
+            <span id="latentNVal" class="small-note"></span>
+          </div>
+        </div>
+
+        <div class="twins-clean-field twins-clean-slider">
+          <label for="specN">Overlay twins in spectra</label>
+          <div>
+            <input id="specN" type="range"
+                   min="1" max="50" value="5"/>
+            <span id="specNVal" class="small-note"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="twins-clean-settings-bottom">
+        <label title="Filter the UMAP and nearest-neighbor list by observer-frame days relative to literature peak">
+          <input id="filterLiteraturePhase" type="checkbox"/>
+          Literature Phase
+        </label>
+        <div id="literaturePhaseControls" hidden>
         <span>Phase range:</span>
         <div class="phase-dual" role="group" aria-label="Literature phase range in days">
           <input id="litPhaseMin" type="range" min="-100" max="500" step="1" value="-30" aria-label="Earliest literature phase"/>
@@ -156,25 +581,20 @@ the client needs to cross-check it.
         <span id="litPhaseReadout" class="small-note phase-range-readout">−30 to +100 d</span>
         <label title="Include spectra without a source phase date"><input id="litPhaseShowMissing" type="checkbox"/> Include missing phases</label>
       </div>
-      <label for="latentN">Highlight N twins in latent:</label>
-      <input id="latentN" type="range" min="1" max="25" value="10"/>
-      <span id="latentNVal" class="small-note"></span>
-      <label for="specN">Overlay N twins in spectra:</label>
-      <input id="specN" type="range" min="1" max="50" value="5"/>
-      <span id="specNVal" class="small-note"></span>
-      <label for="modelMode">Model and Dataset:</label>
-      <select id="modelMode" aria-label="Model and Dataset">
-        {% for option in twins_datasets %}
-          <option value="{{ option.id }}" {% if option.id == twins_selected_dataset %}selected{% endif %} {% if not option.available %}disabled{% endif %}>{{ option.label }}{% if not option.available %} (data missing){% endif %}</option>
-        {% endfor %}
-      </select>
-      <button id="downloadSelected" class="btn btn-sm btn-outline-secondary ml-auto" type="button">Download selected outputs</button>
-    </div>
+        <button id="downloadSelected"
+          class="btn btn-sm btn-outline-secondary"
+          type="button">Download selected outputs</button>
+      </div>
+    </section>
   </div>
 
   <div id="dashboardGrid" class="dashboard-grid layout-2x2" hidden>
     <div id="latentCard" class="twins-card panel-card">
-      <div class="panel-toolbar"><button class="expandBtn btn btn-sm btn-light" data-card="latentCard" type="button">⛶ Expand</button></div>
+      <div class="panel-toolbar">
+        <span id="latentColorNote" class="latent-color-note">
+          Colored by: Raw type
+        </span>
+        <button class="expandBtn btn btn-sm btn-light" data-card="latentCard" type="button">⛶ Expand</button></div>
       <div id="latent" class="panel-content plot-panel"></div>
     </div>
     <div id="specCard" class="twins-card panel-card">
@@ -184,7 +604,7 @@ the client needs to cross-check it.
     <div id="rmseCard" class="twins-card panel-card">
       <div class="panel-toolbar">
         <label for="metricMode">Metric:</label>
-        <select id="metricMode"><option value="rmse">Spectral RMSE</option><option value="cosine">Cosine similarity</option></select>
+        <select id="metricMode"><option value="cosine" selected>Cosine similarity</option><option value="rmse">Spectral RMSE</option></select>
         <button class="expandBtn btn btn-sm btn-light" data-card="rmseCard" type="button">⛶ Expand</button>
       </div>
       <div id="rmse" class="panel-content plot-panel"></div>

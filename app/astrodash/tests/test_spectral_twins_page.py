@@ -63,7 +63,7 @@ class SpectralTwinsPageTests(TwinsPageTestCase):
         self._install_descriptor()
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Spectral Twins (DAEP)")
+        self.assertContains(response, "Spectral Twins")
 
     def test_page_points_at_the_served_bundle_with_its_cache_key(self):
         self._install_descriptor()
@@ -145,8 +145,8 @@ class SpectralTwinsDatasetTests(TwinsPageTestCase):
         (self.observer_dir / "data_spectra.bin").unlink()
         response = self.client.get(self.url)
         self.assertContains(response, '"bundleId": "rest"')
-        self.assertContains(response, "Observer-Frame DAEP (data missing)")
-        self.assertNotContains(response, "Multi-Object DAEP (data missing)")
+        self.assertContains(response, "Observer-Frame (data missing)")
+        self.assertNotContains(response, "Multi-Object (data missing)")
 
     def test_requesting_an_uninstalled_dataset_renders_the_missing_state(self):
         self._install_descriptor(bundle_id="rest")
